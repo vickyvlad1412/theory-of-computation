@@ -1,6 +1,4 @@
-import datetime
-
-print ("Hello World!")
+## Initial commit for ToC Vending Machine assignment
 
 
 
