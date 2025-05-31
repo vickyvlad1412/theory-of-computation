@@ -1,5 +1,19 @@
-import sys
+import os
 
+items = {
+    "1": ("Water", 2.00),
+    "2": ("Soda", 3.50),
+    "3": ("Chips", 4.50),
+    "4": ("Chocolate", 6.00),
+    "5": ("Coffee", 7.50),
+    "6": ("Juice", 8.50),
+    "7": ("Sandwich", 9.00),
+    "8": ("Energy Drink", 10.00)
+}
+
+valid_notes = [0.5, 1.0]
+
+# ANSI Colors
 class Colors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -11,95 +25,90 @@ class Colors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-def print_item_list(items):
-    print(f"{Colors.BOLD}\n📦 Available Items:{Colors.ENDC}")
-    for key, (item, price) in items.items():
-        print(f"  {key}. {item} - RM{price:.2f}")
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-def get_valid_choice(prompt, choices):
+def print_title():
+    print(f"{Colors.HEADER}{'='*45}")
+    print(f"{' VENDING MACHINE SIMULATION ':^45}")
+    print(f"{'='*45}{Colors.ENDC}")
+
+def print_items():
+    print(f"\n{Colors.BOLD}Available Items:{Colors.ENDC}")
+    for key, (name, price) in items.items():
+        print(f" {key}. {name:<15} - RM{price:.2f}")
+
+def get_valid_input(prompt, options):
     while True:
-        choice = input(prompt).strip()
-        if choice in choices:
+        choice = input(f"{Colors.OKBLUE}{prompt}{Colors.ENDC}").strip().lower()
+        if choice in options:
             return choice
-        print(f"{Colors.WARNING}⚠️ Invalid choice. Please try again.{Colors.ENDC}")
+        print(f"{Colors.WARNING}Invalid input. Try again.{Colors.ENDC}")
 
-def dfa_mode(items):
-    print_item_list(items)
-    choice = get_valid_choice("\nSelect an item (1/2/3): ", items.keys())
-    item_name, item_price = items[choice]
-    print(f"\n📍 You selected: {Colors.OKGREEN}{item_name} - RM{item_price:.2f}{Colors.ENDC}")
+def run_transaction(mode_name):
+    print_items()
+    item_choice = get_valid_input("Select an item by number: ", items.keys())
+
+    item_name, price = items[item_choice]
+    print(f"\n🛒 You selected: {Colors.OKGREEN}{item_name} - RM{price:.2f}{Colors.ENDC}")
 
     current_amount = 0.0
-    print(f"\n🔁 {Colors.UNDERLINE}Initial State:{Colors.ENDC} {Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}")
+    current_state = f"{Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}"
+    print(f"\n🔁 {Colors.UNDERLINE}Initial State:{Colors.ENDC} {current_state}")
 
-    while current_amount < item_price:
-        print(f"\n💠 {Colors.BOLD}Remaining:{Colors.ENDC} RM{item_price - current_amount:.2f}")
-        print(f"🧠 {Colors.BOLD}Current State:{Colors.ENDC} {Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}")
-        note_input = input("Insert RM0.5 or RM1.0: ").strip()
+    while current_amount < price:
+        remaining = price - current_amount
+        print(f"\n💰 {Colors.BOLD}Remaining:{Colors.ENDC} RM{remaining:.2f}")
+        print(f"📍 Current State: {Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}")
+        try:
+            note = float(input("Insert RM0.5 or RM1.0: ").strip())
+        except ValueError:
+            note = -1  # Invalid
 
-        if note_input not in ['0.5', '1.0']:
-            print(f"{Colors.FAIL}❌ Invalid note inserted. DFA does not accept this. Terminating...{Colors.ENDC}")
-            sys.exit()
-
-        note = float(note_input)
-        prev_state = f"Q{current_amount:.1f}"
-        current_amount += note
-        current_state = f"Q{current_amount:.1f}"
-        print(f"🔀 Transition: {Colors.OKCYAN}{prev_state} ➝ {current_state}{Colors.ENDC}")
-
-    print(f"\n🎉 {Colors.OKGREEN}Transaction complete. Please collect your {item_name}.{Colors.ENDC}")
-    print(f"{Colors.BOLD}ℹ️ DFA vending machine terminates after completing a transaction.{Colors.ENDC}")
-    print(f"{Colors.OKBLUE}Thank you for using the DFA vending machine!{Colors.ENDC}")
-    sys.exit()
-
-def nfa_mode(items):
-    while True:
-        print_item_list(items)
-        choice = get_valid_choice("\nSelect an item (1/2/3): ", items.keys())
-        item_name, item_price = items[choice]
-        print(f"\n📍 You selected: {Colors.OKGREEN}{item_name} - RM{item_price:.2f}{Colors.ENDC}")
-
-        current_amount = 0.0
-        print(f"\n🔁 {Colors.UNDERLINE}Initial State:{Colors.ENDC} {Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}")
-
-        while current_amount < item_price:
-            print(f"\n💠 {Colors.BOLD}Remaining:{Colors.ENDC} RM{item_price - current_amount:.2f}")
-            print(f"🧠 {Colors.BOLD}Current State:{Colors.ENDC} {Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}")
-            note_input = input("Insert RM0.5 or RM1.0: ").strip()
-
-            if note_input not in ['0.5', '1.0']:
-                print(f"{Colors.WARNING}⚠️ Invalid note rejected. Please insert a valid note.{Colors.ENDC}")
+        if note not in valid_notes:
+            if mode_name == "DFA":
+                print(f"\n{Colors.FAIL}Invalid note inserted! DFA mode - machine halts.{Colors.ENDC}")
+                print(f"{Colors.WARNING}💥 Transaction aborted. Goodbye.{Colors.ENDC}")
+                return False  # TERMINATE
+            elif mode_name == "NFA":
+                print(f"{Colors.WARNING}Invalid note. Rejected. Please insert RM0.5 or RM1.0.{Colors.ENDC}")
                 continue
 
-            note = float(note_input)
-            prev_state = f"Q{current_amount:.1f}"
-            current_amount += note
-            current_state = f"Q{current_amount:.1f}"
-            print(f"🔀 Transition: {Colors.OKCYAN}{prev_state} ➝ {current_state}{Colors.ENDC}")
+        prev_state = f"{Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}"
+        current_amount += note
+        current_state = f"{Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}"
+        print(f"🔀 Transition: {prev_state} ➝ {current_state}")
 
-        print(f"\n🎉 {Colors.OKGREEN}Transaction complete. Please collect your {item_name}.{Colors.ENDC}")
-        cont = get_valid_choice(f"\nWould you like to make another purchase?\n  1. Yes\n  2. No\nSelect: ", ['1', '2'])
-        if cont == '2':
-            print(f"\n{Colors.OKBLUE}Thank you for using the NFA vending machine!{Colors.ENDC}")
+    change = current_amount - price
+    print(f"\n✅ {Colors.OKGREEN}Item dispensed: {item_name}{Colors.ENDC}")
+    if change > 0:
+        print(f"🔄 Change returned: RM{change:.2f}")
+    print("🎉 Transaction complete.")
+    return True  # Transaction completed
+
+def vending_machine():
+    clear()
+    print_title()
+    
+    mode = get_valid_input("Select mode:\n  1. DFA\n  2. NFA\nEnter 1 or 2: ", ['1', '2'])
+    mode_name = "DFA" if mode == '1' else "NFA"
+    print(f"\n🧠 You are now in {Colors.BOLD}{mode_name} Mode{Colors.ENDC}.\n")
+
+    if mode_name == "DFA":
+        run_transaction(mode_name)
+        print(f"\n{Colors.OKBLUE}DFA mode: Machine terminates after completing one transaction.{Colors.ENDC}")
+        print(f"{Colors.OKGREEN}Thank you for using the DFA Vending Machine! Goodbye!{Colors.ENDC}")
+        return
+
+    while True:
+        run_transaction(mode_name)
+        print("\nDo you want to:")
+        print("  1. Make another purchase")
+        print("  2. Exit")
+        choice = get_valid_input("Enter your choice (1 or 2): ", ['1', '2'])
+        if choice == "2":
+            print(f"\n{Colors.OKGREEN}Thank you for using the NFA Vending Machine. Goodbye!{Colors.ENDC}")
             break
 
-def main():
-    items = {
-        '1': ("Water", 2.0),
-        '2': ("Soda", 2.5),
-        '3': ("Juice", 3.0)
-    }
-
-    print(f"{Colors.HEADER}{Colors.BOLD}🧃 Welcome to the Vending Machine Simulation!{Colors.ENDC}")
-    mode = get_valid_choice("Choose mode:\n  1. DFA\n  2. NFA\nSelect: ", ['1', '2'])
-
-    if mode == '1':
-        print(f"\n{Colors.OKBLUE}⚙️ DFA Mode Activated{Colors.ENDC}")
-        dfa_mode(items)
-    else:
-        print(f"\n{Colors.OKBLUE}⚙️ NFA Mode Activated{Colors.ENDC}")
-        nfa_mode(items)
-
-if __name__ == "__main__":
-    main()
+vending_machine()
 
