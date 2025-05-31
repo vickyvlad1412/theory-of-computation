@@ -60,6 +60,7 @@ def run_transaction(mode_name):
         remaining = price - current_amount
         print(f"\n💰 {Colors.BOLD}Remaining:{Colors.ENDC} RM{remaining:.2f}")
         print(f"📍 Current State: {Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}")
+        print(f"💵 {Colors.BOLD}Cumulative Inserted:{Colors.ENDC} RM{current_amount:.2f}")
         try:
             note = float(input("Insert RM0.5 or RM1.0: ").strip())
         except ValueError:
@@ -68,7 +69,7 @@ def run_transaction(mode_name):
         if note not in valid_notes:
             if mode_name == "DFA":
                 print(f"\n{Colors.FAIL}Invalid note inserted! DFA mode - machine halts.{Colors.ENDC}")
-                print(f"{Colors.WARNING}💥 Transaction aborted. Goodbye.{Colors.ENDC}")
+                print(f"{Colors.WARNING}Transaction aborted. Goodbye.{Colors.ENDC}")
                 return False  # TERMINATE
             elif mode_name == "NFA":
                 print(f"{Colors.WARNING}Invalid note. Rejected. Please insert RM0.5 or RM1.0.{Colors.ENDC}")
@@ -77,7 +78,7 @@ def run_transaction(mode_name):
         prev_state = f"{Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}"
         current_amount += note
         current_state = f"{Colors.OKCYAN}Q{current_amount:.1f}{Colors.ENDC}"
-        print(f"🔀 Transition: {prev_state} ➝ {current_state}")
+        print(f"\n🔀 Transition: {prev_state} ➝ {current_state}")
 
     change = current_amount - price
     print(f"\n✅ {Colors.OKGREEN}Item dispensed: {item_name}{Colors.ENDC}")
@@ -94,21 +95,17 @@ def vending_machine():
     mode_name = "DFA" if mode == '1' else "NFA"
     print(f"\n🧠 You are now in {Colors.BOLD}{mode_name} Mode{Colors.ENDC}.\n")
 
-    if mode_name == "DFA":
-        run_transaction(mode_name)
-        print(f"\n{Colors.OKBLUE}DFA mode: Machine terminates after completing one transaction.{Colors.ENDC}")
-        print(f"{Colors.OKGREEN}Thank you for using the DFA Vending Machine! Goodbye!{Colors.ENDC}")
-        return
-
     while True:
-        run_transaction(mode_name)
+        success = run_transaction(mode_name)
+        if mode_name == "DFA" and not success:
+            print(f"\n{Colors.FAIL}DFA mode: Machine terminates due to error.{Colors.ENDC}")
+            break
         print("\nDo you want to:")
         print("  1. Make another purchase")
         print("  2. Exit")
         choice = get_valid_input("Enter your choice (1 or 2): ", ['1', '2'])
         if choice == "2":
-            print(f"\n{Colors.OKGREEN}Thank you for using the NFA Vending Machine. Goodbye!{Colors.ENDC}")
+            print(f"\n{Colors.OKGREEN}Thank you for using the {mode_name} Vending Machine. Goodbye!{Colors.ENDC}")
             break
 
 vending_machine()
-
